@@ -1,0 +1,31 @@
+{
+    "env": {
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:prettier/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint",
+        "prettier"
+    ],
+    "rules": {
+        "prettier/prettier": ["error", { "avoidEscape": true }],
+        "@typescript-eslint/indent": [
+            "error",
+            "tab"
+        ],
+        "@typescript-eslint/quotes": [
+            "error",
+            "single",
+            "avoid-escape"
+        ],
+        "@typescript-eslint/semi": [
+            "error",
+            "always"
+        ]
+    }
+}
