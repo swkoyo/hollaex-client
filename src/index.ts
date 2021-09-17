@@ -4,7 +4,30 @@ import crypto from 'crypto';
 import qs from 'qs';
 import _ from 'lodash';
 
-type Method = 'get' | 'post' | 'put' | 'delete';
+type RequestMethod = 'get' | 'post' | 'put' | 'delete';
+type OrderSide = 'buy' | 'sell';
+type OrderType = 'limit' | 'market';
+
+interface CancelOrdersOpts {
+	symbol: string;
+}
+
+interface CreateOrderConfig {
+	symbol: string;
+	size: number;
+	side: OrderSide;
+	type: OrderType;
+	price?: number;
+}
+
+interface MarketOrderOpts {
+	note?: string;
+}
+
+interface CreateOrderOpts extends MarketOrderOpts {
+	stopPrice?: number;
+	postOnly?: boolean;
+}
 
 interface AuthHeaders {
 	'api-key': string;
@@ -13,7 +36,7 @@ interface AuthHeaders {
 }
 
 interface RequestConfig {
-	method: Method;
+	method: RequestMethod;
 	path: string;
 	params?: object;
 	data?: object;
@@ -52,7 +75,7 @@ interface TradesQueryParams extends BasicQueryParams {
 
 interface OrdersQueryParmas extends BasicQueryParams {
 	symbol?: string;
-	side?: 'buy' | 'sell';
+	side?: OrderSide;
 	status?: 'new' | 'pfilled' | 'filled' | 'canceled';
 	open?: boolean;
 }
@@ -103,6 +126,11 @@ export default class Client {
 		};
 
 		return headers;
+	}
+
+	async getKit() {
+		const { data } = await this.instance.get('/kit');
+		return data;
 	}
 
 	async getTicker(symbol: string): Promise<object> {
@@ -161,7 +189,10 @@ export default class Client {
 		return data;
 	}
 
-	async getUserDeposits(params: TransactionsQueryParams) {
+	async getUserDeposits(params?: TransactionsQueryParams) {
+		if (params) {
+			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
+		}
 		const { data } = await this.instance.get('/user/deposits', {
 			params,
 			headers: this.generateAuthHeaders({
@@ -173,7 +204,10 @@ export default class Client {
 		return data;
 	}
 
-	async getUserWithdrawals(params: TransactionsQueryParams) {
+	async getUserWithdrawals(params?: TransactionsQueryParams) {
+		if (params) {
+			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
+		}
 		const { data } = await this.instance.get('/user/withdrawals', {
 			params,
 			headers: this.generateAuthHeaders({
@@ -185,7 +219,10 @@ export default class Client {
 		return data;
 	}
 
-	async getUserTrades(params: TradesQueryParams) {
+	async getUserTrades(params?: TradesQueryParams) {
+		if (params) {
+			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
+		}
 		const { data } = await this.instance.get('/user/trades', {
 			params,
 			headers: this.generateAuthHeaders({
@@ -197,7 +234,22 @@ export default class Client {
 		return data;
 	}
 
-	async getUserOrder(orderId: string) {
+	async getUserOrders(params?: OrdersQueryParmas) {
+		if (params) {
+			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
+		}
+		const { data } = await this.instance.get('/orders', {
+			params,
+			headers: this.generateAuthHeaders({
+				method: 'get',
+				path: '/orders',
+				params
+			})
+		});
+		return data;
+	}
+
+	async getOrder(orderId: string) {
 		const params = { order_id: orderId };
 		const { data } = await this.instance.get('/order', {
 			params,
@@ -210,12 +262,120 @@ export default class Client {
 		return data;
 	}
 
-	async getUserOrders(params: OrdersQueryParmas) {
-		const { data } = await this.instance.get('/orders', {
+	async createOrder(config: CreateOrderConfig, opts?: CreateOrderOpts) {
+		const { symbol, side, size, price, type } = config;
+		const requestData = {
+			symbol,
+			side,
+			size,
+			type,
+			price,
+			stop: opts?.stopPrice,
+			meta: {
+				post_only: opts?.postOnly,
+				note: opts?.note
+			}
+		};
+		const { data } = await this.instance.post('/order', requestData, {
+			headers: this.generateAuthHeaders({
+				method: 'post',
+				path: '/order',
+				data: requestData
+			})
+		});
+		return data;
+	}
+
+	async createLimitOrder(
+		side: OrderSide,
+		symbol: string,
+		size: number,
+		price: number,
+		opts?: CreateOrderOpts
+	) {
+		return this.createOrder(
+			{
+				type: 'limit',
+				side,
+				symbol,
+				size,
+				price
+			},
+			opts
+		);
+	}
+
+	async createLimitBuyOrder(
+		symbol: string,
+		size: number,
+		price: number,
+		opts?: CreateOrderOpts
+	) {
+		return this.createLimitOrder('buy', symbol, size, price, opts);
+	}
+
+	async createLimitSellOrder(
+		symbol: string,
+		size: number,
+		price: number,
+		opts?: CreateOrderOpts
+	) {
+		return this.createLimitOrder('sell', symbol, size, price, opts);
+	}
+
+	async createMarketOrder(
+		side: OrderSide,
+		symbol: string,
+		size: number,
+		opts?: MarketOrderOpts
+	) {
+		return this.createOrder(
+			{
+				type: 'market',
+				side,
+				symbol,
+				size
+			},
+			opts
+		);
+	}
+
+	async createMarketBuyOrder(
+		symbol: string,
+		size: number,
+		opts?: MarketOrderOpts
+	) {
+		return this.createMarketOrder('buy', symbol, size, opts);
+	}
+
+	async createMarketSellOrder(
+		symbol: string,
+		size: number,
+		opts?: MarketOrderOpts
+	) {
+		return this.createMarketOrder('sell', symbol, size, opts);
+	}
+
+	async cancelOrder(orderId: string) {
+		const params = { order_id: orderId };
+		const { data } = await this.instance.delete('/order', {
 			params,
 			headers: this.generateAuthHeaders({
-				method: 'get',
-				path: '/orders',
+				method: 'delete',
+				path: '/order',
+				params
+			})
+		});
+		return data;
+	}
+
+	async cancelOrders(opts?: CancelOrdersOpts) {
+		const params = { symbol: opts?.symbol };
+		const { data } = await this.instance.delete('/order', {
+			params,
+			headers: this.generateAuthHeaders({
+				method: 'delete',
+				path: '/order/all',
 				params
 			})
 		});
