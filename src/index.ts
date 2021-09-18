@@ -6,18 +6,18 @@ import _ from 'lodash';
 import WebSocket from 'ws';
 import { setWsHeartbeat } from 'ws-heartbeat/client';
 
-interface Websocket extends WebSocket {
+export interface Websocket extends WebSocket {
 	_events?: object;
 }
 
-type OrderSide = 'buy' | 'sell';
-type OrderType = 'limit' | 'market';
+export type OrderSide = 'buy' | 'sell';
+export type OrderType = 'limit' | 'market';
 
-interface CancelOrdersOpts {
+export interface CancelOrdersOpts {
 	symbol: string;
 }
 
-interface CreateOrderConfig {
+export interface CreateOrderConfig {
 	symbol: string;
 	size: number;
 	side: OrderSide;
@@ -25,29 +25,29 @@ interface CreateOrderConfig {
 	price?: number;
 }
 
-interface MarketOrderOpts {
+export interface MarketOrderOpts {
 	note?: string;
 }
 
-interface CreateOrderOpts extends MarketOrderOpts {
+export interface CreateOrderOpts extends MarketOrderOpts {
 	stopPrice?: number;
 	postOnly?: boolean;
 }
 
-interface AuthHeaders {
+export interface AuthHeaders {
 	'api-key': string;
 	'api-expires': number;
 	'api-signature': string;
 }
 
-interface RequestConfig {
+export interface RequestConfig {
 	method: Method | 'connect';
 	path: string;
 	params?: object;
 	data?: object;
 }
 
-interface ClientConfig {
+export interface ClientConfig {
 	apiUrl?: string;
 	apiKey?: string;
 	secret?: string;
@@ -55,7 +55,7 @@ interface ClientConfig {
 	version?: number;
 }
 
-interface BasicQueryParams {
+export interface BasicQueryParams {
 	limit?: number;
 	page?: number;
 	orderBy?: string;
@@ -64,7 +64,7 @@ interface BasicQueryParams {
 	endDate?: Date | 'string';
 }
 
-interface TransactionsQueryParams extends BasicQueryParams {
+export interface TransactionsQueryParams extends BasicQueryParams {
 	currency?: string;
 	status?: boolean;
 	dismissed?: boolean;
@@ -75,18 +75,18 @@ interface TransactionsQueryParams extends BasicQueryParams {
 	address?: string;
 }
 
-interface TradesQueryParams extends BasicQueryParams {
+export interface TradesQueryParams extends BasicQueryParams {
 	symbol?: string;
 }
 
-interface OrdersQueryParmas extends BasicQueryParams {
+export interface OrdersQueryParmas extends BasicQueryParams {
 	symbol?: string;
 	side?: OrderSide;
 	status?: 'new' | 'pfilled' | 'filled' | 'canceled';
 	open?: boolean;
 }
 
-interface CreateSignatureOpts {
+export interface CreateSignatureOpts {
 	data?: object;
 	params?: object;
 }
@@ -442,65 +442,69 @@ export class Client {
 		}
 		this.ws = new WebSocket(url);
 
-		this.ws.on('unexpected-response', () => {
-			if (this.ws?.readyState !== WebSocket.CLOSING) {
-				if (this.ws?.readyState === WebSocket.OPEN) {
-					this.ws.close();
-				} else if (this.wsReconnect) {
-					this.wsEventListeners = this.ws?._events;
-					this.ws = undefined;
-					setTimeout(() => {
-						this.wsConnect(this.wsEvents);
-					}, this.wsReconnectInterval);
-				} else {
-					this.wsEventListeners = undefined;
-					this.ws = undefined;
+		if (this.wsEventListeners) {
+			this.ws._events = this.wsEventListeners;
+		} else {
+			this.ws.on('unexpected-response', () => {
+				if (this.ws?.readyState !== WebSocket.CLOSING) {
+					if (this.ws?.readyState === WebSocket.OPEN) {
+						this.ws.close();
+					} else if (this.wsReconnect) {
+						this.wsEventListeners = this.ws?._events;
+						this.ws = undefined;
+						setTimeout(() => {
+							this.wsConnect(this.wsEvents);
+						}, this.wsReconnectInterval);
+					} else {
+						this.wsEventListeners = undefined;
+						this.ws = undefined;
+					}
 				}
-			}
-		});
-
-		this.ws.on('error', () => {
-			if (this.ws?.readyState !== WebSocket.CLOSING) {
-				if (this.ws?.readyState === WebSocket.OPEN) {
-					this.ws.close();
-				} else if (this.wsReconnect) {
-					this.wsEventListeners = this.ws?._events;
-					this.ws = undefined;
-					setTimeout(() => {
-						this.wsConnect(this.wsEvents);
-					}, this.wsReconnectInterval);
-				} else {
-					this.wsEventListeners = undefined;
-					this.ws = undefined;
-				}
-			}
-		});
-
-		this.ws.on('close', () => {
-			if (this.wsReconnect) {
-				this.wsEventListeners = this.ws?._events;
-				this.ws = undefined;
-				setTimeout(() => {
-					this.wsConnect(this.wsEvents);
-				}, this.wsReconnectInterval);
-			} else {
-				this.wsEventListeners = undefined;
-				this.ws = undefined;
-			}
-		});
-
-		this.ws.on('open', () => {
-			if (this.wsEvents.length > 0) {
-				this.subscribe(this.wsEvents);
-			}
-
-			this.initialConnection = false;
-			// @ts-ignore
-			setWsHeartbeat(this.ws, JSON.stringify({ op: 'ping' }), {
-				pingTimeout: 60000,
-				pingInterval: 25000
 			});
-		});
+
+			this.ws.on('error', () => {
+				if (this.ws?.readyState !== WebSocket.CLOSING) {
+					if (this.ws?.readyState === WebSocket.OPEN) {
+						this.ws.close();
+					} else if (this.wsReconnect) {
+						this.wsEventListeners = this.ws?._events;
+						this.ws = undefined;
+						setTimeout(() => {
+							this.wsConnect(this.wsEvents);
+						}, this.wsReconnectInterval);
+					} else {
+						this.wsEventListeners = undefined;
+						this.ws = undefined;
+					}
+				}
+			});
+
+			this.ws.on('close', () => {
+				if (this.wsReconnect) {
+					this.wsEventListeners = this.ws?._events;
+					this.ws = undefined;
+					setTimeout(() => {
+						this.wsConnect(this.wsEvents);
+					}, this.wsReconnectInterval);
+				} else {
+					this.wsEventListeners = undefined;
+					this.ws = undefined;
+				}
+			});
+
+			this.ws.on('open', () => {
+				if (this.wsEvents.length > 0) {
+					this.subscribe(this.wsEvents);
+				}
+
+				this.initialConnection = false;
+				// @ts-ignore
+				setWsHeartbeat(this.ws, JSON.stringify({ op: 'ping' }), {
+					pingTimeout: 60000,
+					pingInterval: 25000
+				});
+			});
+		}
 	}
 
 	disconnect() {
