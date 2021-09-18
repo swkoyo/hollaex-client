@@ -133,7 +133,7 @@ export class Client {
 		path: string,
 		expires: number,
 		opts?: CreateSignatureOpts
-	) {
+	): string {
 		const formattedString = `${method.toUpperCase()}${this.getFullUrl(
 			path,
 			opts?.params
@@ -163,7 +163,7 @@ export class Client {
 		return headers;
 	}
 
-	async getKit() {
+	async getKit(): Promise<object> {
 		const { data } = await this.instance.get('/kit');
 		return data;
 	}
@@ -192,19 +192,19 @@ export class Client {
 		return data;
 	}
 
-	async getPublicTrades(symbol?: string) {
+	async getPublicTrades(symbol?: string): Promise<object> {
 		const { data } = await this.instance.get('/trades', {
 			params: { symbol }
 		});
 		return data;
 	}
 
-	async getConstants() {
+	async getConstants(): Promise<object> {
 		const { data } = await this.instance.get('/constants');
 		return data;
 	}
 
-	async getUserInfo() {
+	async getUserInfo(): Promise<object> {
 		const { data } = await this.instance.get('/user', {
 			headers: this.generateAuthHeaders({
 				method: 'get',
@@ -214,7 +214,7 @@ export class Client {
 		return data;
 	}
 
-	async getUserBalance() {
+	async getUserBalance(): Promise<object> {
 		const { data } = await this.instance.get('/user/balance', {
 			headers: this.generateAuthHeaders({
 				method: 'get',
@@ -224,7 +224,7 @@ export class Client {
 		return data;
 	}
 
-	async getUserDeposits(params?: TransactionsQueryParams) {
+	async getUserDeposits(params?: TransactionsQueryParams): Promise<object> {
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -239,7 +239,9 @@ export class Client {
 		return data;
 	}
 
-	async getUserWithdrawals(params?: TransactionsQueryParams) {
+	async getUserWithdrawals(
+		params?: TransactionsQueryParams
+	): Promise<object> {
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -254,7 +256,7 @@ export class Client {
 		return data;
 	}
 
-	async getUserTrades(params?: TradesQueryParams) {
+	async getUserTrades(params?: TradesQueryParams): Promise<object> {
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -269,7 +271,7 @@ export class Client {
 		return data;
 	}
 
-	async getUserOrders(params?: OrdersQueryParmas) {
+	async getUserOrders(params?: OrdersQueryParmas): Promise<object> {
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -284,7 +286,7 @@ export class Client {
 		return data;
 	}
 
-	async getOrder(orderId: string) {
+	async getOrder(orderId: string): Promise<object> {
 		const params = { order_id: orderId };
 		const { data } = await this.instance.get('/order', {
 			params,
@@ -297,7 +299,10 @@ export class Client {
 		return data;
 	}
 
-	async createOrder(config: CreateOrderConfig, opts?: CreateOrderOpts) {
+	async createOrder(
+		config: CreateOrderConfig,
+		opts?: CreateOrderOpts
+	): Promise<object> {
 		const { symbol, side, size, price, type } = config;
 		const requestData = {
 			symbol,
@@ -327,7 +332,7 @@ export class Client {
 		size: number,
 		price: number,
 		opts?: CreateOrderOpts
-	) {
+	): Promise<object> {
 		return this.createOrder(
 			{
 				type: 'limit',
@@ -345,7 +350,7 @@ export class Client {
 		size: number,
 		price: number,
 		opts?: CreateOrderOpts
-	) {
+	): Promise<object> {
 		return this.createLimitOrder('buy', symbol, size, price, opts);
 	}
 
@@ -354,7 +359,7 @@ export class Client {
 		size: number,
 		price: number,
 		opts?: CreateOrderOpts
-	) {
+	): Promise<object> {
 		return this.createLimitOrder('sell', symbol, size, price, opts);
 	}
 
@@ -363,7 +368,7 @@ export class Client {
 		symbol: string,
 		size: number,
 		opts?: MarketOrderOpts
-	) {
+	): Promise<object> {
 		return this.createOrder(
 			{
 				type: 'market',
@@ -379,7 +384,7 @@ export class Client {
 		symbol: string,
 		size: number,
 		opts?: MarketOrderOpts
-	) {
+	): Promise<object> {
 		return this.createMarketOrder('buy', symbol, size, opts);
 	}
 
@@ -387,11 +392,11 @@ export class Client {
 		symbol: string,
 		size: number,
 		opts?: MarketOrderOpts
-	) {
+	): Promise<object> {
 		return this.createMarketOrder('sell', symbol, size, opts);
 	}
 
-	async cancelOrder(orderId: string) {
+	async cancelOrder(orderId: string): Promise<object> {
 		const params = { order_id: orderId };
 		const { data } = await this.instance.delete('/order', {
 			params,
@@ -404,7 +409,7 @@ export class Client {
 		return data;
 	}
 
-	async cancelOrders(opts?: CancelOrdersOpts) {
+	async cancelOrders(opts?: CancelOrdersOpts): Promise<object> {
 		const params = { symbol: opts?.symbol };
 		const { data } = await this.instance.delete('/order', {
 			params,
@@ -417,8 +422,8 @@ export class Client {
 		return data;
 	}
 
-	wsConnected() {
-		return this.ws && this.ws.readyState === WebSocket.OPEN;
+	wsConnected(): boolean {
+		return !!(this.ws && this.ws.readyState === WebSocket.OPEN);
 	}
 
 	wsConnect(events: string[]) {
