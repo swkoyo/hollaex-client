@@ -164,7 +164,6 @@ export class Client {
 	}
 
 	async getKit() {
-		console.log('getting kit')
 		const { data } = await this.instance.get('/kit');
 		return data;
 	}
