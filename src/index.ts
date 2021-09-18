@@ -119,6 +119,12 @@ export class Client {
 		this.wsReconnectInterval = 5000;
 	}
 
+	private async validateAuth() {
+		if (!this.apiKey || !this.secret) {
+			throw new Error('API key and secret required for private requests');
+		}
+	}
+
 	private getFullUrl(path: string, params?: object): string {
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
@@ -205,6 +211,7 @@ export class Client {
 	}
 
 	async getUserInfo(): Promise<object> {
+		await this.validateAuth();
 		const { data } = await this.instance.get('/user', {
 			headers: this.generateAuthHeaders({
 				method: 'get',
@@ -215,6 +222,7 @@ export class Client {
 	}
 
 	async getUserBalance(): Promise<object> {
+		await this.validateAuth();
 		const { data } = await this.instance.get('/user/balance', {
 			headers: this.generateAuthHeaders({
 				method: 'get',
@@ -225,6 +233,7 @@ export class Client {
 	}
 
 	async getUserDeposits(params?: TransactionsQueryParams): Promise<object> {
+		await this.validateAuth();
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -242,6 +251,7 @@ export class Client {
 	async getUserWithdrawals(
 		params?: TransactionsQueryParams
 	): Promise<object> {
+		await this.validateAuth();
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -257,6 +267,7 @@ export class Client {
 	}
 
 	async getUserTrades(params?: TradesQueryParams): Promise<object> {
+		await this.validateAuth();
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -272,6 +283,7 @@ export class Client {
 	}
 
 	async getUserOrders(params?: OrdersQueryParmas): Promise<object> {
+		await this.validateAuth();
 		if (params) {
 			params = _.mapKeys(params, (value, key) => _.snakeCase(key));
 		}
@@ -287,6 +299,7 @@ export class Client {
 	}
 
 	async getOrder(orderId: string): Promise<object> {
+		await this.validateAuth();
 		const params = { order_id: orderId };
 		const { data } = await this.instance.get('/order', {
 			params,
@@ -303,6 +316,7 @@ export class Client {
 		config: CreateOrderConfig,
 		opts?: CreateOrderOpts
 	): Promise<object> {
+		await this.validateAuth();
 		const { symbol, side, size, price, type } = config;
 		const requestData = {
 			symbol,
@@ -333,6 +347,7 @@ export class Client {
 		price: number,
 		opts?: CreateOrderOpts
 	): Promise<object> {
+		await this.validateAuth();
 		return this.createOrder(
 			{
 				type: 'limit',
@@ -397,6 +412,7 @@ export class Client {
 	}
 
 	async cancelOrder(orderId: string): Promise<object> {
+		await this.validateAuth();
 		const params = { order_id: orderId };
 		const { data } = await this.instance.delete('/order', {
 			params,
@@ -410,6 +426,7 @@ export class Client {
 	}
 
 	async cancelOrders(opts?: CancelOrdersOpts): Promise<object> {
+		await this.validateAuth();
 		const params = { symbol: opts?.symbol };
 		const { data } = await this.instance.delete('/order', {
 			params,
