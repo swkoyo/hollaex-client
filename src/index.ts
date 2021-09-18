@@ -91,7 +91,7 @@ interface CreateSignatureOpts {
 	params?: object;
 }
 
-export default class Client {
+export class Client {
 	private readonly apiUrl: string;
 	private readonly apiKey: string;
 	private readonly secret: string;
@@ -164,6 +164,7 @@ export default class Client {
 	}
 
 	async getKit() {
+		console.log('getting kit')
 		const { data } = await this.instance.get('/kit');
 		return data;
 	}
